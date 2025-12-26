@@ -42,14 +42,22 @@ export const getUserById = async (id) => {
 
 // 更新用户角色
 export const updateUserRole = async (id, role) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ role })
-    .eq('id', id)
-    .select();
+  try {
+    console.log('Updating user role:', { id, role });
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ role })
+      .eq('id', id)
+      .select();
 
-  if (error) throw error;
-  return data[0];
+    if (error) throw error;
+
+    console.log('Update result:', data);
+    return data[0];
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    throw error;
+  }
 };
 
 // 获取用户统计信息

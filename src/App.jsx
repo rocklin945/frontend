@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useAuth } from './contexts/AuthContext';
-import MainLayout from './components/Layout/MainLayout';
+import AdminRoute from './components/AdminRoute';
+import PrivateRoute from './components/PrivateRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -24,6 +25,12 @@ import InventoryList from './pages/inventory/InventoryList';
 // 用户管理
 import UserList from './pages/users/UserList';
 
+// 前台页面
+import StoreProductPage from './pages/store/StoreProductPage';
+import CartPage from './pages/store/CartPage';
+import CheckoutPage from './pages/store/CheckoutPage';
+import StoreOrdersPage from './pages/store/StoreOrdersPage';
+
 // 路由配置
 function AppRoutes() {
   return (
@@ -31,7 +38,17 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
+      {/* 前台路由 - 所有已登录用户可访问 */}
       <Route element={<PrivateRoute />}>
+        <Route path="/store" element={<Navigate to="/store/products" />} />
+        <Route path="/store/products" element={<StoreProductPage />} />
+        <Route path="/store/cart" element={<CartPage />} />
+        <Route path="/store/checkout" element={<CheckoutPage />} />
+        <Route path="/store/orders" element={<StoreOrdersPage />} />
+      </Route>
+
+      {/* 后台管理路由 - 只有管理员可访问 */}
+      <Route element={<AdminRoute />}>
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={<Dashboard />} />
 
@@ -59,40 +76,26 @@ function AppRoutes() {
   );
 }
 
-// 私有路由守卫
-function PrivateRoute() {
-  const { isAuthenticated, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Spin size="large" />
-    </div>;
-  }
-
-  return isAuthenticated ? (
-    <MainLayout>
-      <Outlet />
-    </MainLayout>
-  ) : (
-    <Navigate to="/login" state={{ from: location }} replace />
-  );
-}
-
 // 主App组件
 function App() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log("App render - Auth state:", { isAuthenticated, loading, path: location.pathname });
+  console.log("App render - Auth state:", { isAuthenticated, isAdmin, loading, path: location.pathname });
 
   useEffect(() => {
-    // 如果用户已经登录，但是访问登录或注册页面，则重定向到仪表盘
+    // 如果用户已经登录，但是访问登录或注册页面
     if (isAuthenticated && (location.pathname === '/login' || location.pathname === '/register')) {
-      navigate('/dashboard');
+      // 如果是管理员，重定向到后台仪表盘
+      if (isAdmin) {
+        navigate('/dashboard');
+      } else {
+        // 如果是普通用户，重定向到前台商店
+        navigate('/store');
+      }
     }
-  }, [isAuthenticated, location.pathname, navigate]);
+  }, [isAuthenticated, isAdmin, location.pathname, navigate]);
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>

@@ -35,11 +35,13 @@ const UserList = () => {
       content: `将用户角色更改为: ${getRoleName(newRole)}`,
       async onOk() {
         try {
+          console.log('Confirming role change for user:', userId, 'to role:', newRole);
           await updateUserRole(userId, newRole);
           message.success('用户角色已更新');
           fetchUsers();
         } catch (error) {
           message.error('更新用户角色失败: ' + error.message);
+          console.error('Error in handleRoleChange:', error);
         }
       },
     });

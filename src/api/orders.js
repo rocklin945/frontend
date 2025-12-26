@@ -67,57 +67,98 @@ export const getOrderById = async (id) => {
 
 // 创建新订单
 export const createOrder = async (orderData) => {
-  // 1. 创建订单记录
-  const { data: order, error } = await supabase
-    .from('orders')
-    .insert([{
-      user_id: orderData.user_id,
-      status: 'pending',
-      total_amount: orderData.total_amount,
-      shipping_address: orderData.shipping_address,
-      contact_phone: orderData.contact_phone
-    }])
-    .select();
+  try {
+    console.log("开始创建订单，数据:", orderData);
 
-  if (error) throw error;
+    // 1. 创建订单记录
+    const { data: order, error } = await supabase
+      .from('orders')
+      .insert([{
+        user_id: orderData.user_id,
+        status: 'pending',
+        total_amount: orderData.total_amount,
+        shipping_address: orderData.shipping_address,
+        contact_phone: orderData.contact_phone
+      }])
+      .select();
 
-  // 2. 创建订单明细
-  if (orderData.items && orderData.items.length > 0) {
-    const orderItems = orderData.items.map(item => ({
-      order_id: order[0].id,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      unit_price: item.unit_price
-    }));
-
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
-
-    if (itemsError) throw itemsError;
-
-    // 3. 更新库存数量
-    for (const item of orderData.items) {
-      const { data: inventoryData, error: invError } = await supabase
-        .from('inventory')
-        .select('quantity')
-        .eq('product_id', item.product_id)
-        .single();
-
-      if (invError) throw invError;
-
-      const newQuantity = inventoryData.quantity - item.quantity;
-
-      const { error: updateError } = await supabase
-        .from('inventory')
-        .update({ quantity: newQuantity })
-        .eq('product_id', item.product_id);
-
-      if (updateError) throw updateError;
+    if (error) {
+      console.error("创建订单记录失败:", error);
+      throw error;
     }
-  }
 
-  return order[0];
+    console.log("创建订单成功:", order);
+
+    // 2. 创建订单明细
+    if (orderData.items && orderData.items.length > 0) {
+      const orderItems = orderData.items.map(item => ({
+        order_id: order[0].id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price
+      }));
+
+      console.log("准备创建订单项:", orderItems);
+
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems)
+        .select();
+
+      if (itemsError) {
+        console.error("创建订单项失败:", itemsError);
+        // 如果订单项创建失败，删除已创建的订单
+        await supabase.from('orders').delete().eq('id', order[0].id);
+        throw itemsError;
+      }
+
+      console.log("创建订单项成功:", itemsData);
+
+      // 3. 更新库存数量
+      try {
+        for (const item of orderData.items) {
+          console.log("准备更新库存，商品ID:", item.product_id);
+
+          const { data: inventoryData, error: invError } = await supabase
+            .from('inventory')
+            .select('quantity')
+            .eq('product_id', item.product_id)
+            .single();
+
+          if (invError) {
+            console.error("获取库存信息失败:", invError);
+            throw invError;
+          }
+
+          console.log("当前库存:", inventoryData);
+          const newQuantity = inventoryData.quantity - item.quantity;
+          console.log("新库存数量:", newQuantity);
+
+          const { data: updateData, error: updateError } = await supabase
+            .from('inventory')
+            .update({ quantity: newQuantity })
+            .eq('product_id', item.product_id)
+            .select();
+
+          if (updateError) {
+            console.error("更新库存失败:", updateError);
+            throw updateError;
+          }
+
+          console.log("库存更新成功:", updateData);
+        }
+      } catch (invError) {
+        console.error("库存更新过程中发生错误:", invError);
+        // 如果库存更新失败，不回滚订单，但记录错误
+        console.warn("库存更新失败，但订单仍然创建成功");
+      }
+    }
+
+    return order[0];
+  } catch (error) {
+    console.error("创建订单过程中发生错误:", error);
+    throw error;
+  }
 };
 
 // 更新订单状态
