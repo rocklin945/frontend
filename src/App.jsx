@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useAuth } from './contexts/AuthContext';
@@ -31,8 +31,77 @@ import CartPage from './pages/store/CartPage';
 import CheckoutPage from './pages/store/CheckoutPage';
 import StoreOrdersPage from './pages/store/StoreOrdersPage';
 
-// 路由配置
-function AppRoutes() {
+// 根路径重定向组件 - 单独创建为独立组件
+const RootRedirect = () => {
+  const { isAuthenticated, isAdmin, user } = useAuth();
+  const navigate = useNavigate();
+
+  console.log('RootRedirect - 权限状态:', {
+    isAuthenticated,
+    isAdmin,
+    userRole: user?.profile?.role,
+    path: '/'
+  });
+
+  // 使用React的useEffect进行重定向处理
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      if (isAdmin) {
+        console.log('Root: 检测到管理员角色，跳转到后台');
+        navigate('/dashboard');
+      } else {
+        console.log('Root: 检测到普通用户角色，跳转到前台');
+        navigate('/store/products');
+      }
+    } else {
+      console.log('Root: 未登录用户，跳转到登录页');
+      navigate('/login');
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
+
+  // 返回一个加载指示器，防止闪烁
+  return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <Spin size="large" />
+  </div>;
+};
+
+// App组件
+const App = () => {
+  const { isAuthenticated, isAdmin, loading, user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  console.log("App render - Auth state:", {
+    isAuthenticated,
+    isAdmin,
+    userRole: user?.profile?.role,
+    loading,
+    path: location.pathname
+  });
+
+  // 处理认证状态下的特定页面重定向
+  React.useEffect(() => {
+    // 只处理登录和注册页面的自动重定向
+    // 如果用户已经登录，但是访问登录或注册页面
+    if (isAuthenticated && (location.pathname === '/login' || location.pathname === '/register')) {
+      // 如果是管理员，重定向到后台仪表盘
+      if (isAdmin) {
+        navigate('/dashboard');
+      } else {
+        // 如果是普通用户，重定向到前台商店
+        navigate('/store/products');
+      }
+    }
+  }, [isAuthenticated, isAdmin, location.pathname, navigate]);
+
+  // 显示加载状态
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Spin size="large" />
+    </div>;
+  }
+
+  // 渲染路由
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
@@ -49,7 +118,6 @@ function AppRoutes() {
 
       {/* 后台管理路由 - 只有管理员可访问 */}
       <Route element={<AdminRoute />}>
-        <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="/dashboard" element={<Dashboard />} />
 
         {/* 产品管理路由 */}
@@ -72,38 +140,11 @@ function AppRoutes() {
 
         <Route path="*" element={<div>页面不存在</div>} />
       </Route>
+
+      {/* 根路径重定向 */}
+      <Route path="/" element={<RootRedirect />} />
     </Routes>
   );
-}
-
-// 主App组件
-function App() {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  console.log("App render - Auth state:", { isAuthenticated, isAdmin, loading, path: location.pathname });
-
-  useEffect(() => {
-    // 如果用户已经登录，但是访问登录或注册页面
-    if (isAuthenticated && (location.pathname === '/login' || location.pathname === '/register')) {
-      // 如果是管理员，重定向到后台仪表盘
-      if (isAdmin) {
-        navigate('/dashboard');
-      } else {
-        // 如果是普通用户，重定向到前台商店
-        navigate('/store');
-      }
-    }
-  }, [isAuthenticated, isAdmin, location.pathname, navigate]);
-
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Spin size="large" />
-    </div>;
-  }
-
-  return <AppRoutes />;
-}
+};
 
 export default App;

@@ -20,12 +20,24 @@ const PrivateRoute = () => {
     );
   }
 
-  return isAuthenticated ? (
+  // 如果用户未登录，重定向到登录页面
+  if (!isAuthenticated) {
+    console.log('用户未登录，从路径重定向到登录页面:', location.pathname);
+
+    // 防止重定向循环
+    if (location.pathname === '/login') {
+      console.log('已经在登录页面，避免重定向循环');
+      return null;
+    }
+
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  // 用户已登录，渲染前台布局和内容
+  return (
     <StoreFrontLayout>
       <Outlet />
     </StoreFrontLayout>
-  ) : (
-    <Navigate to="/login" state={{ from: location }} replace />
   );
 };
 

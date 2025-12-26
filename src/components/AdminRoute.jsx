@@ -9,8 +9,16 @@ import MainLayout from './Layout/MainLayout';
  * 仅允许管理员角色访问，其他角色将被重定向到前台页面
  */
 const AdminRoute = () => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading, user } = useAuth();
   const location = useLocation();
+
+  console.log('AdminRoute - 权限状态:', {
+    isAuthenticated,
+    isAdmin,
+    userRole: user?.profile?.role,
+    loading,
+    path: location.pathname
+  });
 
   if (loading) {
     return (
@@ -25,20 +33,18 @@ const AdminRoute = () => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // 如果用户不是管理员，显示无权限页面，提供前往前台页面的链接
+  // 如果用户不是管理员，重定向到前台页面
   if (!isAdmin) {
-    return (
-      <Result
-        status="403"
-        title="没有权限"
-        subTitle="抱歉，您没有访问后台管理系统的权限。"
-        extra={
-          <Button type="primary" onClick={() => window.location.href = '/store/products'}>
-            前往前台页面
-          </Button>
-        }
-      />
-    );
+    const redirectPath = "/store/products";
+    console.log(`用户不是管理员，重定向到: ${redirectPath}，当前路径: ${location.pathname}`);
+
+    // 防止无限循环
+    if (location.pathname === redirectPath) {
+      console.log('已经在目标路径，避免重定向');
+      return null; // 不执行重定向
+    }
+
+    return <Navigate to={redirectPath} replace state={{ fromAdmin: true }} />;
   }
 
   // 用户已登录且是管理员，渲染后台布局和内容

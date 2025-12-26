@@ -28,14 +28,14 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
-      const { user } = await signIn(email, password);
+      const { user: authUser } = await signIn(email, password);
 
       // 获取用户profile数据
       const currentUser = await getCurrentUser();
       setUser(currentUser);
 
       message.success('登录成功');
-      return user;
+      return currentUser; // 返回完整的用户信息，包含profile
     } catch (error) {
       message.error(error.message || '登录失败');
       throw error;
