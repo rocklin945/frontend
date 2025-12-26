@@ -1,0 +1,86 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  padding: 24px;
+}
+
+.site-layout-background {
+  background: #fff;
+  padding: 24px;
+  min-height: 280px;
+}
+
+.ant-layout {
+  min-height: 100vh;
+}
+
+.ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  height: 32px;
+  margin: 16px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.login-container {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.login-title {
+  text-align: center;
+  margin-bottom: 24px;
+  color: #1890ff;
+}
+
+.dashboard-card {
+  margin-bottom: 24px;
+}
+
+.chart-container {
+  margin-top: 24px;
+  height: 300px;
+  width: 100%;
+}
+
+.table-operations {
+  margin-bottom: 16px;
+}
+
+.table-operations button {
+  margin-right: 8px;
+}
